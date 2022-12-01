@@ -11,24 +11,24 @@ class Puzzle02(Puzzle, year=2021, day=2):
     def solve_part_1(self): # Solution for part 1
         position = depth = 0
         for (command, x) in self.data:
-            if(command == "forward"):
-                position += x
+            if(command == "up"):
+                depth -= x
             elif(command == "down"):
                 depth += x
-            elif(command == "up"):
-                depth -= x
+            else: # command == "forward"
+                position += x
         return position * depth
 
     def solve_part_2(self): # Solution for part 2
         aim = position = depth = 0
         for (command, x) in self.data:
-            if(command == "forward"):
-                position += x
-                depth += aim * x
+            if(command == "up"):
+                aim -= x
             elif(command == "down"):
                 aim += x
-            elif(command == "up"):
-                aim -= x
+            else: # command == "forward"
+                position += x
+                depth += aim * x
         return position * depth
 
 if(__name__ == "__main__"):
