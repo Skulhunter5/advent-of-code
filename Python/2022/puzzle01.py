@@ -25,7 +25,7 @@ class Puzzle01(Puzzle, year=2022, day=1):
 
     def solve_part_1(self): # Solution for part 1
         return self.elves()[-1]
-    
+
     def solve_part_2(self): # Solution for part 2
         return sum(self.elves()[-3:])
 

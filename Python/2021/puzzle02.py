@@ -18,7 +18,7 @@ class Puzzle02(Puzzle, year=2021, day=2):
             elif(command == "up"):
                 depth -= x
         return position * depth
-    
+
     def solve_part_2(self): # Solution for part 2
         aim = position = depth = 0
         for (command, x) in self.data:

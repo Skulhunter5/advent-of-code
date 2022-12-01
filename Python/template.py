@@ -10,7 +10,7 @@ class Puzzle__(Puzzle, year=__, day=__):
 
     def solve_part_1(self): # Solution for part 1
         return None
-    
+
     def solve_part_2(self): # Solution for part 2
         return None
 
