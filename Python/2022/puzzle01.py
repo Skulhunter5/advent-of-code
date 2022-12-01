@@ -1,6 +1,6 @@
+import os
 import sys
-sys.path.append('..')
-
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from common.Puzzle import Puzzle
 
 class Puzzle01(Puzzle, year=2022, day=1):
