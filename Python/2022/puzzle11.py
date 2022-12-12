@@ -69,9 +69,9 @@ Monkey 0:
                     f = item if factor[0] == FACTOR_OLD else factor[1]
                     r = (item + f) if operator == '+' else (item * f)
                     r = r // 3
-                    nextId = trueId if r % divisor == 0 else falseId
+                    nextId = trueId if (r % divisor == 0) else falseId
                     data[nextId][INDEX_ITEMS].append(r)
-                data[monkeyId][INDEX_ITEMS].clear()
+                items.clear()
 
         # returning the product of the two highest inspection-counts
         result = max(inspection_counter)
@@ -82,42 +82,31 @@ Monkey 0:
         data = self.create_data_copy()
         inspection_counter = [0] * len(data)
         for i in range(10000):
-            start = time.time_ns()
-            #print(i, len(data), len(data[0][INDEX_ITEMS]), len(inspection_counter))
-            print(i, sum([len(monkey[1]) for monkey in data]))
-            for monkeyId, monkey in enumerate(data):
-                inspection_counter[monkeyId] += len(monkey[1])
-                for item in monkey[1]:
-                    f = item if monkey[3][0] == FACTOR_OLD else monkey[3][1]
-                    r = (item + f) if monkey[2] == '+' else (item * f)
-                    #r = r // 3
-                    nextId = monkey[5] if (r % monkey[4] == 0) else monkey[6]
-                    data[nextId][1].append(r)
-                data[monkeyId][1].clear()
-            #for (monkeyId, items, operator, factor, divisor, trueId, falseId) in data:
-            #    inspection_counter[monkeyId] += len(items)
-            #    for item in items:
-            #        f = item if factor[0] == FACTOR_OLD else factor[1]
-            #        r = (item + f) if operator == '+' else (item * f)
-            #        #r = r // 3
-            #        nextId = trueId if (r % divisor == 0) else falseId
-            #        data[nextId][INDEX_ITEMS].append(r)
-            #    data[monkeyId][INDEX_ITEMS].clear()
+            for (monkeyId, items, operator, factor, divisor, trueId, falseId) in data:
+                inspection_counter[monkeyId] += len(items)
+                for item in items:
+                    f = item if factor[0] == FACTOR_OLD else factor[1]
+                    r = (item + f) if operator == '+' else (item * f)
+                    divisible = r % divisor == 0
+                    r %= divisor
+                    nextId = trueId if divisible else falseId
+                    data[nextId][INDEX_ITEMS].append(r)
+                items.clear()
             
-            #if(i == 1 or i == 20 or i == 1000):
-            #    print(inspection_counter)
-
-            end = time.time_ns()
-            #print(i+1, end - start)
-
-            #if(i > 1):
-            #    print()
-            #if((i + 1) % 1000 == 0):
-            #    print(f"After round {i+1}, the monkeys are holding items with these worry levels:")
-            #    for (monkeyId, items, _, _, _, _, _) in data:
-            #        print(f"Monkey {monkeyId}: {', '.join([str(item) for item in items])}")
+            if((i + 1) % 1000 == 0 or (i+1) == 1 or (i+1) == 20):
+                if(i > 1):
+                    print()
+                print(f"== After round {i+1} ==")
+                for monkeyId, inspections in enumerate(inspection_counter):
+                    print(f"Monkey {monkeyId} inspected items {inspections} times.")
+                #print(f"After round {i+1}, the monkeys are holding items with these worry levels:")
+                #for (monkeyId, items, _, _, _, _, _) in data:
+                #    print(f"Monkey {monkeyId}: {', '.join([str(item) for item in items])}")
 
         # returning the product of the two highest inspection-counts
+        print()
+        print(inspection_counter)
+        print()
         result = max(inspection_counter)
         inspection_counter.remove(result)
         return result * max(inspection_counter)
