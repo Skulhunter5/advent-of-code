@@ -14,7 +14,7 @@ class Puzzle():
         print(os.path.dirname(__file__))
         path = os.path.join(os.path.dirname(__file__), "..", str(self.year), "inputs")
         with open(os.path.join(path, filename)) as fp:
-            self.data = self.process_input([line.strip() for line in fp.readlines()])
+            self.data = self.process_input([line.rstrip() for line in fp.readlines()])
 
     def solve_part_1(self):
         raise NotImplementedError(f"Puzzle__{self.day:02}.solve_part_1() has not been implemented.")
