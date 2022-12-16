@@ -38,10 +38,10 @@ def is_pair_correct(left, right):
 def pair_compare(x, y):
     return -is_pair_correct(x, y)
 
-class Puzzle12(Puzzle, year=2022, day=12):
+class Puzzle13(Puzzle, year=2022, day=13):
     @staticmethod
     def process_input(data):
-        return [Puzzle12.parse_line(line, 0)[0] for line in data if line != ""]
+        return [Puzzle13.parse_line(line, 0)[0] for line in data if line != ""]
 
     @staticmethod
     def parse_line(line, i):
@@ -55,11 +55,11 @@ class Puzzle12(Puzzle, year=2022, day=12):
             i += 1
             if(line[i] == ']'):
                 return lst, i+1
-            item, i = Puzzle12.parse_line(line, i)
+            item, i = Puzzle13.parse_line(line, i)
             lst.append(item)
             while(line[i] == ','):
                 i += 1
-                item, i = Puzzle12.parse_line(line, i)
+                item, i = Puzzle13.parse_line(line, i)
                 lst.append(item)
             i += 1
             return lst, i
@@ -86,7 +86,7 @@ class Puzzle12(Puzzle, year=2022, day=12):
         return result
 
 if(__name__ == "__main__"):
-    puzzle = Puzzle12()
+    puzzle = Puzzle13()
     part1, part2 = puzzle.solve()
     print(f"Advent of Code {puzzle.year} day {puzzle.day}:")
     print(f"- Part 1: {part1}")
