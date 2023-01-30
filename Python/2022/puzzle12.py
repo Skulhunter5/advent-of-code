@@ -8,34 +8,16 @@ class Cell():
         self.c = c
         self.h = ord('a') if c == 'S' else (ord('z') if c == 'E' else ord(c))
         self.pos = pos
-        if(self.is_start()):
-            self.visited = True
-            self.shortest = 0
-        else:
-            self.visited = False
-            self.shortest = -1
-        self.parent = None
-        self.children = set()
+        self.visited = False
     
     def __repr__(self):
-        return f"('{self.h}', {self.pos[0]}, {self.pos[1]})"
+        return f"({self.h}=>{chr(self.h)}, {self.pos[0]}, {self.pos[1]})"
 
     def is_start(self):
         return self.c == 'S'
     
     def is_goal(self):
         return self.c == 'E'
-    
-    def update(self, cell):
-        if(self.visited):
-            if(cell.shortest + 1 >= self.shortest):
-                return
-        self.visited = True
-        self.parent = cell
-        self.parent.children.add(self)
-        self.shortest = self.parent.shortest + 1
-        for child in self.children:
-            child.update(self)
 
 class Grid():
     def __init__(self, data):
@@ -43,6 +25,11 @@ class Grid():
         self.width = len(data)
         self.height = len(data[0])
     
+    def reset(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                self.data[x][y].visited = False
+
     def get_cell(self, pos):
         return self.data[pos[0]][pos[1]]
     
@@ -75,23 +62,58 @@ class Puzzle12(Puzzle, year=2022, day=12):
         return (grid, start, goal)
 
     def solve_part_1(self): # Solution for part 1
-        grid, start, goal = self.data
+        grid, start, _ = self.data
+        grid.reset()
 
-        queue = grid.get_neighbors(start.pos)
-        for neighbor in queue:
-            neighbor.update(start)
-        while(len(queue) > 0):
-            cell = queue.pop(0)
-            neighbors = grid.get_neighbors(cell.pos)
-            for neighbor in neighbors:
-                if(neighbor.h <= cell.h + 1):
-                    if(not neighbor.visited):
-                        queue.append(neighbor)
-                    neighbor.update(cell)
-        return goal.shortest
+        i = 0
+        queue = [start]
+        next_queue = []
+        while True:
+            if(len(queue) == 0):
+                raise Exception("No valid path found")
+
+            i += 1
+            for cell in queue:
+                for neighbor in grid.get_neighbors(cell.pos):
+                    if(neighbor.h > cell.h + 1):
+                        continue
+                    if(neighbor.visited):
+                        continue
+                    if(neighbor.is_goal()):
+                        return i
+                    
+                    neighbor.visited = True
+                    next_queue.append(neighbor)
+            
+            queue = next_queue
+            next_queue = []
 
     def solve_part_2(self): # Solution for part 2
-        return None
+        grid, _, goal = self.data
+        grid.reset()
+
+        i = 0
+        queue = [goal]
+        next_queue = []
+        while True:
+            if(len(queue) == 0):
+                raise Exception("No valid path found")
+            
+            i += 1
+            for cell in queue:
+                for neighbor in grid.get_neighbors(cell.pos):
+                    if(cell.h > neighbor.h + 1):
+                        continue
+                    if(neighbor.visited):
+                        continue
+                    if(neighbor.h == ord('a')):
+                        return i
+                    
+                    neighbor.visited = True
+                    next_queue.append(neighbor)
+            
+            queue = next_queue
+            next_queue = []
 
 if(__name__ == "__main__"):
     puzzle = Puzzle12()
