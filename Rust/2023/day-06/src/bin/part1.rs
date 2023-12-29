@@ -8,7 +8,7 @@ fn solve(input: &String) -> String {
     let lines = input.lines().take(2).collect::<Vec<_>>();
 
     let times = parse_line(lines[0]);
-    let distances = parse_line(lines[1]);
+    let records = parse_line(lines[1]);
 
     times
         .into_iter()
