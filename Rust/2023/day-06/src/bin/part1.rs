@@ -12,7 +12,7 @@ fn solve(input: &String) -> String {
 
     times
         .into_iter()
-        .zip(distances)
+        .zip(records)
         .map(|(time, record)| {
             (1..time)
                 .filter(|start| ((time - start) * start) > record)
