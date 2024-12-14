@@ -10,16 +10,41 @@ fn main() {
 enum Tile {
     None,
     Obstruction,
-    Visited,
+    Visited { directions: Directions },
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+struct Directions {
+    dirs: usize,
+}
+
+impl Directions {
+    fn has_direction(&self, dir: Direction) -> bool {
+        ((self.dirs >> dir as usize) & 1) != 0
+    }
+
+    fn set_direction(&mut self, dir: Direction) {
+        self.dirs |= 1 << dir as usize;
+    }
+}
+
+impl From<Direction> for Directions {
+    fn from(dir: Direction) -> Self {
+        Self {
+            dirs: 1 << dir as usize,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
 enum Direction {
-    Up,
-    Right,
-    Down,
-    Left,
+    Up = 0,
+    Right = 1,
+    Down = 2,
+    Left = 3,
 }
 
+#[derive(Debug, Copy, Clone)]
 struct Guard {
     x: usize,
     y: usize,
@@ -54,6 +79,7 @@ impl Guard {
     }
 }
 
+#[derive(Debug, Clone)]
 struct Map {
     grid: Vec<Vec<Tile>>,
     width: usize,
@@ -62,9 +88,8 @@ struct Map {
 }
 
 impl Map {
-    fn trace_route(&mut self) -> usize {
+    fn trace_route(&mut self) -> Option<usize> {
         let mut visited = 1;
-        // only requires
         loop {
             let (x, y) = self.guard.get_next();
             if x >= self.width || y >= self.height {
@@ -73,16 +98,34 @@ impl Map {
 
             if self.get(x, y) == Tile::Obstruction {
                 self.guard.rotate();
+                let dir = self.guard.dir;
+                if let Tile::Visited { directions } = self.get_mut(self.guard.x, self.guard.y) {
+                    directions.set_direction(dir);
+                } else {
+                    unreachable!("guard can't be standing on a tile he hasn't visited");
+                }
             } else {
+                let dir = self.guard.dir;
                 if self.get(x, y) == Tile::None {
-                    self.set(x, y, Tile::Visited);
+                    self.set(
+                        x,
+                        y,
+                        Tile::Visited {
+                            directions: Directions::from(dir),
+                        },
+                    );
                     visited += 1;
+                } else if let Tile::Visited { directions } = self.get_mut(x, y) {
+                    if directions.has_direction(dir) {
+                        return None;
+                    }
+                    directions.set_direction(dir);
                 }
                 self.guard.advance();
             }
         }
 
-        visited
+        Some(visited)
     }
 
     #[inline]
@@ -91,9 +134,39 @@ impl Map {
     }
 
     #[inline]
+    fn get_mut(&mut self, x: usize, y: usize) -> &mut Tile {
+        return &mut self.grid[y][x];
+    }
+
+    #[inline]
     fn set(&mut self, x: usize, y: usize, tile: Tile) {
         self.grid[y][x] = tile;
     }
+}
+
+fn count_possible_obstructions(map: &Map, tested_map: &Map) -> usize {
+    let mut count = 0;
+
+    for x in 0..map.width {
+        for y in 0..map.height {
+            if map.get(x, y) == Tile::Obstruction || (map.guard.x == x && map.guard.y == y) {
+                continue;
+            }
+            // use the data from part one to skip tiles that will never be visited during a normal
+            // route and can therefore not change the route
+            if tested_map.get(x, y) == Tile::None {
+                continue;
+            }
+            let mut new_map = map.clone();
+            new_map.set(x, y, Tile::Obstruction);
+            let res = new_map.trace_route();
+            if res.is_none() {
+                count += 1;
+            }
+        }
+    }
+
+    count
 }
 
 impl TryFrom<&String> for Map {
@@ -109,18 +182,17 @@ impl TryFrom<&String> for Map {
                     '#' => Tile::Obstruction,
                     '.' => Tile::None,
                     '^' | '>' | 'v' | '<' => {
-                        guard = Some(Guard::new(
-                            x,
-                            y,
-                            match c {
-                                '^' => Direction::Up,
-                                '>' => Direction::Right,
-                                'v' => Direction::Down,
-                                '<' => Direction::Left,
-                                _ => unreachable!(),
-                            },
-                        ));
-                        Tile::Visited
+                        let dir = match c {
+                            '^' => Direction::Up,
+                            '>' => Direction::Right,
+                            'v' => Direction::Down,
+                            '<' => Direction::Left,
+                            _ => unreachable!(),
+                        };
+                        guard = Some(Guard::new(x, y, dir));
+                        Tile::Visited {
+                            directions: Directions::from(dir),
+                        }
                     }
                     x => return Err(format!("invalid input: invalid character '{}", x)),
                 });
@@ -144,9 +216,19 @@ impl TryFrom<&String> for Map {
 }
 
 fn solve(input: &String) -> (usize, usize) {
-    let mut map = Map::try_from(input).unwrap();
+    let start = std::time::Instant::now();
 
-    (map.trace_route(), 0)
+    let map = Map::try_from(input).unwrap();
+    let mut test_map = map.clone();
+    let visited_tiles = test_map
+        .trace_route()
+        .expect("input for part 1 should not contain a loop");
+    let possible_obstructions = count_possible_obstructions(&map, &test_map);
+
+    let time = start.elapsed();
+    println!("Time: {:?}", time);
+
+    (visited_tiles, possible_obstructions)
 }
 
 #[cfg(test)]
@@ -167,6 +249,6 @@ mod tests {
 ......#..."
             .to_string();
 
-        assert_eq!(solve(&input), (41, 0));
+        assert_eq!(solve(&input), (41, 6));
     }
 }
