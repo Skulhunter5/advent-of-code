@@ -13,9 +13,11 @@ enum Tile {
     None,
     Wall,
     Box,
+    BoxLeft,
+    BoxRight,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Direction {
     Up,
     Right,
@@ -131,6 +133,8 @@ impl Display for Warehouse {
                         Tile::None => '.',
                         Tile::Box => 'O',
                         Tile::Wall => '#',
+                        Tile::BoxLeft => '[',
+                        Tile::BoxRight => ']',
                     }
                 };
                 write!(f, "{c}")?;
@@ -144,24 +148,74 @@ impl Display for Warehouse {
 impl Warehouse {
     #[inline]
     fn robot_move(&mut self, dir: Direction) {
-        let mut last_pos = self.robot + dir;
-        loop {
-            let tile = self.get(last_pos.x as usize, last_pos.y as usize);
-            if tile == Tile::Wall {
+        let check_move = self.check_move(self.robot, dir);
+        if check_move {
+            self.do_move(self.robot, dir);
+        }
+        return;
+    }
+
+    fn check_move(&self, pos: Vec2, dir: Direction) -> bool {
+        let next_pos = pos + dir;
+        if pos == self.robot {
+            return self.check_move(next_pos, dir);
+        }
+
+        let tile = self.get(pos.x as usize, pos.y as usize);
+        let other_pos = match tile {
+            Tile::None => return true,
+            Tile::Wall => return false,
+            Tile::Box => return self.check_move(next_pos, dir),
+            Tile::BoxLeft => Vec2::new(pos.x + 1, pos.y),
+            Tile::BoxRight => Vec2::new(pos.x - 1, pos.y),
+        };
+        assert!({
+            let other_tile = self.get(other_pos.x as usize, other_pos.y as usize);
+            other_tile == Tile::BoxLeft || other_tile == Tile::BoxRight
+        });
+        let other_next_pos = other_pos + dir;
+        if dir == Direction::Right || dir == Direction::Left {
+            return self.check_move(other_next_pos, dir);
+        } else if dir == Direction::Up || dir == Direction::Down {
+            return self.check_move(next_pos, dir) && self.check_move(other_next_pos, dir);
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn do_move(&mut self, pos: Vec2, dir: Direction) {
+        let next_pos = pos + dir;
+        if pos == self.robot {
+            self.do_move(next_pos, dir);
+            self.robot = next_pos;
+            return;
+        }
+
+        let tile = self.get(pos.x as usize, pos.y as usize);
+        let other_pos = match tile {
+            Tile::None => return,
+            Tile::Wall => return,
+            Tile::Box => {
+                self.do_move(next_pos, dir);
+                self.set(pos.x as usize, pos.y as usize, Tile::None);
+                self.set(next_pos.x as usize, next_pos.y as usize, Tile::Box);
                 return;
-            }
-            if tile == Tile::Box {
-                last_pos = last_pos + dir;
-            }
-            if tile == Tile::None {
-                break;
-            }
+            },
+            Tile::BoxLeft => Vec2::new(pos.x + 1, pos.y),
+            Tile::BoxRight => Vec2::new(pos.x - 1, pos.y),
+        };
+        let other_tile = self.get(other_pos.x as usize, other_pos.y as usize);
+        assert!(other_tile == Tile::BoxLeft || other_tile == Tile::BoxRight);
+
+        let other_next_pos = other_pos + dir;
+        if dir != Direction::Right && dir != Direction::Left {
+            self.do_move(next_pos, dir);
         }
-        self.robot = self.robot + dir;
-        if last_pos != self.robot {
-            self.set(self.robot.x as usize, self.robot.y as usize, Tile::None);
-            self.set(last_pos.x as usize, last_pos.y as usize, Tile::Box);
-        }
+        self.do_move(other_next_pos, dir);
+        self.set(pos.x as usize, pos.y as usize, Tile::None);
+        self.set(other_pos.x as usize, other_pos.y as usize, Tile::None);
+        self.set(next_pos.x as usize, next_pos.y as usize, tile);
+        self.set(other_next_pos.x as usize, other_next_pos.y as usize, other_tile);
     }
 
     #[inline]
@@ -169,13 +223,42 @@ impl Warehouse {
         let mut total = 0;
         for y in 0..self.height {
             for x in 0..self.width {
-                if self.get(x, y) == Tile::Box {
+                let tile = self.get(x, y);
+                if tile == Tile::Box || tile == Tile::BoxLeft {
                     total += 100 * y + x;
                 }
             }
         }
 
         total
+    }
+
+    #[inline]
+    fn make_wide(&self) -> Warehouse {
+        let width = self.width * 2;
+        let height = self.height;
+        let mut grid = Vec::with_capacity(width * height);
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let double_tile = match self.get(x, y) {
+                    Tile::BoxLeft => panic!("Tried make a wide warehouse wider"),
+                    Tile::BoxRight => panic!("Tried make a wide warehouse wider"),
+                    Tile::Box => {
+                        grid.push(Tile::BoxLeft);
+                        grid.push(Tile::BoxRight);
+                        continue;
+                    }
+                    tile => tile,
+                };
+                grid.push(double_tile);
+                grid.push(double_tile);
+            }
+        }
+
+        let robot = Vec2::new(self.robot.x * 2, self.robot.y);
+
+        Self { grid, width, height, robot }
     }
 
     #[inline(always)]
@@ -193,17 +276,29 @@ fn solve(input: &String) -> (usize, usize) {
     let start = std::time::Instant::now();
 
     let (mut warehouse, moves) = parse_input(&input);
-    for m in moves {
-        warehouse.robot_move(m);
+    let mut wide_warehouse = warehouse.make_wide();
+
+    //println!("Warehouse:\n{}", &warehouse);
+    for m in &moves {
+        warehouse.robot_move(*m);
         //println!("Move: {m}");
         //println!("{}", &warehouse);
     }
-    let gps_sum = warehouse.sum_box_gps();
+
+    //println!("Wide warehouse:\n{}", &wide_warehouse);
+    for m in &moves {
+        wide_warehouse.robot_move(*m);
+        //println!("Move: {m}");
+        //println!("{}", &wide_warehouse);
+    }
+
+    let gps_sum1 = warehouse.sum_box_gps();
+    let gps_sum2 = wide_warehouse.sum_box_gps();
 
     let time = start.elapsed();
     println!("Time: {:?}", &time);
 
-    (gps_sum, 0)
+    (gps_sum1, gps_sum2)
 }
 
 fn parse_input(input: &String) -> (Warehouse, Vec<Direction>) {
@@ -242,7 +337,7 @@ mod tests {
 <^^>>>vv<v>>v<<"
             .to_string();
 
-        assert_eq!(solve(&input), (2028, 0));
+        assert_eq!(solve(&input).0, 2028);
     }
 
     #[test]
@@ -270,6 +365,6 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^"
             .to_string();
 
-        assert_eq!(solve(&input), (10092, 0));
+        assert_eq!(solve(&input), (10092, 9021));
     }
 }
