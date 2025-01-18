@@ -52,7 +52,10 @@ where
     #[inline(always)]
     fn set(&mut self, pos: Position, value: T) {
         if pos.x >= self.width || pos.y >= self.height {
-            panic!("position ({}, {}) out of bounds for grid of size {}x{}", pos.x, pos.y, self.width, self.height);
+            panic!(
+                "position ({}, {}) out of bounds for grid of size {}x{}",
+                pos.x, pos.y, self.width, self.height
+            );
         }
         self.data[pos.y * self.width + pos.x] = value;
     }
@@ -105,8 +108,6 @@ impl MemoryMap {
                 counter = queue.len() + 1;
             }
             counter -= 1;
-            //println!("Pos: {}x{} at {} steps (counter={})", pos.x, pos.y, steps, counter);
-            //self.print_visited(&visited);
 
             let neighbors = [
                 Position::new(pos.x - 1, pos.y),
@@ -157,7 +158,7 @@ impl MemoryMap {
                         None => unreachable!(),
                         Some(true) => 'O',
                         Some(false) => '.',
-                    }
+                    },
                 };
                 print!("{c}");
             }
@@ -166,8 +167,8 @@ impl MemoryMap {
     }
 }
 
-fn solve(input: &String, size: usize, n_bytes: usize) -> (usize, usize) {
-    let start = std::time::Instant::now();
+fn solve(input: &String, size: usize, n_bytes: usize) -> (usize, String) {
+    let time_start = std::time::Instant::now();
 
     let bytes = input
         .lines()
@@ -182,21 +183,33 @@ fn solve(input: &String, size: usize, n_bytes: usize) -> (usize, usize) {
         .collect::<Vec<_>>();
 
     let mut mem = MemoryMap::new(size, size);
-    //println!("mem before: ");
-    //mem.print();
     mem.corrupt_all(&bytes[..n_bytes]);
-    //println!();
-    //println!("mem after: ");
-    //mem.print();
+
+    let start = Position::new(0, 0);
+    let end = Position::new(size - 1, size - 1);
 
     let min_steps = mem
-        .shortest_path(Position::new(0, 0), Position::new(size - 1, size - 1))
+        .shortest_path(start, end)
         .expect("invalid input: no path to the end");
 
-    let time = start.elapsed();
+    let mut i = n_bytes;
+    let problem_byte = loop {
+        if i >= bytes.len() {
+            break None;
+        }
+        let byte = bytes[i];
+        mem.corrupt(byte);
+        if let None = mem.shortest_path(start, end) {
+            break Some(byte);
+        }
+        i += 1;
+    }
+    .expect("invalid input: no byte blocked a path");
+
+    let time = time_start.elapsed();
     println!("Time: {:?}", &time);
 
-    (min_steps, 0)
+    (min_steps, format!("{},{}", problem_byte.x, problem_byte.y))
 }
 
 #[cfg(test)]
@@ -232,6 +245,6 @@ mod tests {
 2,0"
         .to_string();
 
-        assert_eq!(solve(&input, 7, 12), (22, 0));
+        assert_eq!(solve(&input, 7, 12), (22, "6,1".to_string()));
     }
 }
