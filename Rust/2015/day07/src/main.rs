@@ -5,8 +5,9 @@ pub type WireValue = u16;
 fn main() {
     let input = fs::read_to_string("../inputs/07-input").unwrap();
 
-    let part1 = solve(&input);
+    let (part1, part2) = solve(&input);
     println!("Part 1: {}", part1);
+    println!("Part 2: {}", part2);
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -121,27 +122,41 @@ fn parse_input<S: AsRef<str>>(input: S) -> Vec<Connection> {
     return connections;
 }
 
-fn solve<S: AsRef<str>>(input: S) -> WireValue {
-    let connections = parse_input(input);
-    let wires = simulate(connections);
+fn solve<S: AsRef<str>>(input: S) -> (WireValue, WireValue) {
+    let connections = parse_input(&input);
+    let connections2 = connections.clone();
+    let mut wires: Vec<Option<WireValue>> = vec![None; Wire::MAX_INDEX];
+    simulate(&mut wires, connections);
 
-    wires[Wire::from("a").index()].expect("invalid input: wire 'a' has no value")
+    let part1 =
+        wires[Wire::from("a").index()].expect("invalid input: wire 'a' has no value (part 1)");
+
+    let mut wires2: Vec<Option<WireValue>> = vec![None; Wire::MAX_INDEX];
+    wires2[Wire::from("b").index()] = Some(part1);
+    simulate(&mut wires2, connections2);
+    let part2 =
+        wires2[Wire::from("a").index()].expect("invalid input: wire 'a' has no value (part 2)");
+
+    (part1, part2)
 }
 
-fn simulate(mut connections: Vec<Connection>) -> Vec<Option<WireValue>> {
-    let mut wires: Vec<Option<WireValue>> = vec![None; Wire::MAX_INDEX];
+fn simulate(wires: &mut Vec<Option<WireValue>>, mut connections: Vec<Connection>) {
     while !connections.is_empty() {
         for i in (0..connections.len()).rev() {
             let connection = &connections[i];
             let wire_idx = connection.out_wire.index();
 
             if wires[wire_idx].is_some() {
-                panic!(
-                    "invalid input: multiple inputs to wire {}",
-                    &connection.out_wire
-                );
+                if connection.out_wire == Wire::from("b") {
+                    connections.remove(i);
+                    continue;
+                } else {
+                    panic!(
+                        "invalid input: multiple inputs to wire {}",
+                        &connection.out_wire
+                    );
+                }
             }
-            assert!(wires[wire_idx].is_none());
 
             let result = match &connection.expression {
                 Expression::Literal(value) => Some(*value),
@@ -174,8 +189,6 @@ fn simulate(mut connections: Vec<Connection>) -> Vec<Option<WireValue>> {
             }
         }
     }
-
-    return wires;
 }
 
 #[cfg(test)]
@@ -249,6 +262,9 @@ y: 456"
             expected[wire.index()] = Some(value);
         }
 
-        assert!(simulate(parse_input(input)).starts_with(&expected));
+        let mut wires: Vec<Option<WireValue>> = vec![None; Wire::MAX_INDEX];
+        simulate(&mut wires, parse_input(input));
+
+        assert!(wires.starts_with(&expected));
     }
 }
