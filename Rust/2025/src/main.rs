@@ -55,8 +55,9 @@ fn main() -> ExitCode {
 
 fn run<D: Iterator<Item = Box<dyn Day>>>(days_to_run: D) {
     for day in days_to_run {
-        let input = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name()))
-            .expect(format!("missing input: {}", day.input_name()).as_str());
+        let Ok(input) = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name())) else {
+            continue;
+        };
         let solutions = day.solve_both(input);
         println!("Day {:02}", day.get_day());
         if let Some(part1) = solutions.part1 {
