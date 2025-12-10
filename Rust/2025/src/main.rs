@@ -53,6 +53,9 @@ fn main() -> ExitCode {
     return ExitCode::SUCCESS;
 }
 
+// TODO: Add overview at the end of `run` and `test_examples` showing total number of days run
+// -> for tests also number of tests passed/failed/missing
+
 fn run<D: Iterator<Item = Box<dyn Day>>>(days_to_run: D) {
     for day in days_to_run {
         let Ok(input) = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name())) else {
