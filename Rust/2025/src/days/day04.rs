@@ -1,15 +1,17 @@
 use crate::{Day, Example, Solutions};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct Grid<'a> {
+const BYTE_EMPTY: u8 = b'.';
+const BYTE_PAPER_ROLL: u8 = b'@';
+
+#[derive(Debug)]
+struct Grid {
     width: usize,
     height: usize,
-    cells: &'a [u8],
+    cells: Vec<u8>,
 }
 
-impl<'a> From<&'a str> for Grid<'a> {
-    fn from(value: &'a str) -> Self {
-        let cells = value.as_bytes();
+impl Grid {
+    pub fn new(cells: Vec<u8>) -> Self {
         let width = cells
             .iter()
             .position(|byte| *byte == b'\n')
@@ -21,15 +23,22 @@ impl<'a> From<&'a str> for Grid<'a> {
             cells,
         }
     }
-}
 
-impl Grid<'_> {
     fn get(&self, x: usize, y: usize) -> bool {
         if x >= self.width || y >= self.height {
             panic!("index {x}x{y} out of bounds");
         }
 
-        self.cells[self.index(x, y)] == b'@'
+        self.cells[self.index(x, y)] == BYTE_PAPER_ROLL
+    }
+
+    fn remove(&mut self, x: usize, y: usize) {
+        if x >= self.width || y >= self.height {
+            panic!("index {x}x{y} out of bounds");
+        }
+
+        let index = self.index(x, y);
+        self.cells[index] = BYTE_EMPTY
     }
 
     fn index(&self, x: usize, y: usize) -> usize {
@@ -65,23 +74,42 @@ pub struct Day04;
 
 impl Day for Day04 {
     fn solve_both(&self, input: String) -> Solutions {
-        let input = input.trim_end();
-        let grid = Grid::from(input);
+        let input = input.into_bytes();
+        let mut grid = Grid::new(input);
 
-        let mut accessible_rolls_count = 0;
-
-        for x in 0..grid.width {
-            for y in 0..grid.height {
-                if grid.get(x, y) {
-                    let neighbors = grid.count_neighbors(x, y);
-                    if neighbors < 4 {
-                        accessible_rolls_count += 1;
+        let mut total_rolls_removed = 0;
+        let mut initially_accessible_rolls_count = None;
+        let mut accessible = Vec::new();
+        loop {
+            for x in 0..grid.width {
+                for y in 0..grid.height {
+                    if grid.get(x, y) {
+                        let neighbors = grid.count_neighbors(x, y);
+                        if neighbors < 4 {
+                            accessible.push((x, y));
+                        }
                     }
                 }
             }
+
+            if initially_accessible_rolls_count.is_none() {
+                initially_accessible_rolls_count = Some(accessible.len());
+            }
+            total_rolls_removed += accessible.len();
+            if accessible.len() == 0 {
+                break;
+            }
+
+            for (x, y) in &accessible {
+                grid.remove(*x, *y);
+            }
+            accessible.clear();
         }
 
-        return Solutions::first(accessible_rolls_count.to_string());
+        return Solutions::both(
+            initially_accessible_rolls_count.unwrap().to_string(),
+            total_rolls_removed.to_string(),
+        );
     }
 
     fn get_year(&self) -> usize {
@@ -104,6 +132,6 @@ impl Day for Day04 {
 .@@@@@@@@.
 @.@.@@@.@.";
 
-        Some(vec![Example::new(input, Solutions::first("13"))])
+        Some(vec![Example::new(input, Solutions::both("13", "43"))])
     }
 }
