@@ -30,7 +30,9 @@ impl Day01 {
     fn parse_input<'a>(input: &'a str) -> std::iter::Map<std::str::Lines<'a>, fn(&str) -> Action> {
         input.trim_end().lines().map(|line| {
             let dir = line.chars().next().expect("invalid input: empty line");
-            let amount = line[dir.len_utf8()..].parse::<u16>().expect("invalid input: invalid rotation amount");
+            let amount = line[dir.len_utf8()..]
+                .parse::<u16>()
+                .expect("invalid input: invalid rotation amount");
             let direction = Direction::try_from(dir).expect("invalid input");
             Action { direction, amount }
         })
@@ -97,8 +99,6 @@ L99
 R14
 L82";
 
-        Some(vec![
-            Example::new(input, Solutions::both("3", "6")),
-        ])
+        Some(vec![Example::new(input, Solutions::both("3", "6"))])
     }
 }

@@ -29,7 +29,8 @@ fn main() -> ExitCode {
 
 fn run() {
     for day in days::get_all() {
-        let input = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name())).expect(format!("missing input: {}", day.input_name()).as_str());
+        let input = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name()))
+            .expect(format!("missing input: {}", day.input_name()).as_str());
         let solutions = day.solve_both(input);
         println!("Day {:02}", day.get_day());
         if let Some(part1) = solutions.part1 {
@@ -52,16 +53,28 @@ fn test_examples() {
                 println!("- Example {}", i + 1);
                 if let Some(expected1) = expected.part1 {
                     if let Some(part1) = solutions.part1 {
-                        let res = if expected1 == part1 { "success" } else { "failed" };
-                        println!("  - Part 1: {}", res);
+                        if expected1 == part1 {
+                            println!("  - Part 1: success");
+                        } else {
+                            println!(
+                                "  - Part 1: failed: {{ expected: '{}', got: '{}' }}",
+                                expected1, part1
+                            );
+                        };
                     } else {
                         println!("  - Part 1: missing");
                     }
                 }
                 if let Some(expected2) = expected.part2 {
                     if let Some(part2) = solutions.part2 {
-                        let res = if expected2 == part2 { "success" } else { "failed" };
-                        println!("  - Part 2: {}", res);
+                        if expected2 == part2 {
+                            println!("  - Part 2: success");
+                        } else {
+                            println!(
+                                "  - Part 2: failed: {{ expected: '{}', got: '{}' }}",
+                                expected2, part2
+                            );
+                        };
                     } else {
                         println!("  - Part 2: missing");
                     }
