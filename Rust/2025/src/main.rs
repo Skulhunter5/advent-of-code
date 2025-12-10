@@ -58,7 +58,8 @@ fn main() -> ExitCode {
 
 fn run<D: Iterator<Item = Box<dyn Day>>>(days_to_run: D) {
     for day in days_to_run {
-        let Ok(input) = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name())) else {
+        let Ok(input) = std::fs::read_to_string(Path::new("./inputs/").join(day.input_name()))
+        else {
             continue;
         };
         let solutions = day.solve_both(input);

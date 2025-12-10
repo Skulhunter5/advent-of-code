@@ -11,6 +11,13 @@ pub struct Solutions {
 }
 
 impl Solutions {
+    pub fn none() -> Self {
+        Self {
+            part1: None,
+            part2: None,
+        }
+    }
+
     pub fn first<S: AsRef<str>>(solution: S) -> Self {
         Self {
             part1: Some(solution.as_ref().to_owned()),
