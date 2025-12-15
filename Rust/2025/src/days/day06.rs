@@ -2,9 +2,8 @@ use crate::{Day, Example, Solutions};
 
 pub struct Day06;
 
-impl Day for Day06 {
-    fn solve_both(&self, input: String) -> Solutions {
-        let input = input.trim_end();
+impl Day06 {
+    fn solve_first(input: &str) -> usize {
         let mut lines = input
             .lines()
             .map(|line| line.split(' ').filter(|token| !token.is_empty()))
@@ -37,7 +36,27 @@ impl Day for Day06 {
             total += column_result;
         }
 
-        return Solutions::first(total.to_string());
+        return total;
+    }
+
+    fn solve_second(input: &str) -> usize {
+        let mut lines = input.lines().collect::<Vec<_>>();
+        let mut operators = lines.pop().expect("invalid input");
+        while let Some(operator_pos) = operators.find(|c| c != ' ') {
+            // let operator = operators.chars().nth(operator_pos);
+        }
+
+        todo!();
+    }
+}
+
+impl Day for Day06 {
+    fn solve_both(&self, input: String) -> Solutions {
+        let input = input.trim_end();
+        let first = Self::solve_first(&input);
+        let second = Self::solve_second(&input);
+
+        return Solutions::both(first.to_string(), second.to_string());
     }
 
     fn get_year(&self) -> usize {
