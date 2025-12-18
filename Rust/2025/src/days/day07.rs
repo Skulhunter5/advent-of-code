@@ -11,7 +11,7 @@ impl Day for Day07 {
             .unwrap()
             .iter()
             .position(|byte| *byte == b'S')
-            .expect("invalid input: no 's' marker");
+            .expect("invalid input: no 'S' marker");
         let lines = lines
             .filter(|line| !line.is_empty())
             .enumerate()
@@ -82,6 +82,6 @@ impl Day for Day07 {
 .^.^.^.^.^...^.
 ...............";
 
-        Some(vec![Example::new(input, Solutions::first("21"))])
+        Some(vec![Example::new(input, Solutions::both("21", "40"))])
     }
 }
